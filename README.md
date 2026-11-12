@@ -13,7 +13,7 @@ SM8750 与 MT6991 的独立构建入口。
 
 公开内核源码：
 
-- [SM8750](https://github.com/zaominn/android_kernel_common_oneplus_sm8750_6_6)
-- [MT6991](https://github.com/zaominn/android_kernel_oneplus_mt6991_6_6)
+- [SM8750](https://github.com/zaominn/android_kernel_common_oneplus_sm8750)
+- [MT6991](https://github.com/zaominn/android_kernel_oneplus_mt6991)
 
 请选择与设备平台、内核版本和系统相符的入口；云端编译通过不代表所有设备已完成实机验证。
