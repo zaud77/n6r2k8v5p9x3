@@ -45,7 +45,7 @@ run-name: 6.6.66 · SM8750 · ${{ inputs.device_serial }} · ${{ inputs.build_re
         type: boolean
         default: true
       kernel_suffix:
-        description: 内核版本后缀（留空保留原版本）
+        description: 内核版本后缀（留空沿用基底构建默认值）
         type: string
         default: ''
       build_date:
