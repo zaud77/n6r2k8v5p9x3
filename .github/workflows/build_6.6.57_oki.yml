@@ -1,0 +1,106 @@
+name: 6.6.57 · SM8750 OKI
+run-name: 6.6.57 · SM8750 · ${{ inputs.device_serial }} · ${{ inputs.build_request_id }}
+'on':
+  workflow_dispatch:
+    inputs:
+      build_request_id:
+        description: 构建关联标识
+        type: string
+        default: manual
+      device_serial:
+        description: 绑定设备序列号
+        type: string
+        required: true
+        default: ''
+      ksu_type:
+        description: Root 管理器
+        type: choice
+        default: bakasu
+        options:
+        - bakasu
+        - sukisu
+        - ksunext
+        - kowsu
+        - finasu
+        - ksu
+        - none
+      susfs_enable:
+        description: SUSFS
+        type: boolean
+        default: true
+      lz4_enable:
+        description: LZ4 + Zstd
+        type: boolean
+        default: true
+      unicode_enable:
+        description: Unicode 修复
+        type: boolean
+        default: true
+      adios_enable:
+        description: ADIOS
+        type: boolean
+        default: true
+      baseband_guard:
+        description: 基带保护
+        type: boolean
+        default: true
+      kernel_suffix:
+        description: 内核版本后缀（留空保留原版本）
+        type: string
+        default: ''
+      build_date:
+        description: 内核构建时间（留空使用当前 UTC 时间）
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      ksuver: ${{ steps.pipeline.outputs.ksuver }}
+      ak3name: ${{ steps.pipeline.outputs.ak3name }}
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      with:
+        persist-credentials: false
+    - name: Prepare pinned build inputs
+      uses: ./.github/actions/private-inputs
+      with:
+        repository: ${{ secrets.SOURCE_REPOSITORY }}
+        revision: ${{ secrets.SOURCE_REVISION }}
+        key: ${{ secrets.SOURCE_READ_KEY }}
+        submodules: 'false'
+        dependency-keys: ${{ secrets.DEPENDENCY_SSH_KEYS }}
+        privacy-key: ${{ secrets.BUILD_PRIVACY_KEY }}
+    - name: Run private build pipeline
+      id: pipeline
+      uses: ./ci/actions/build_6.6.57_oki/build
+      with:
+        build_request_id: ${{ inputs.build_request_id }}
+        device_serial: ${{ inputs.device_serial }}
+        ksu_type: ${{ inputs.ksu_type }}
+        susfs_enable: ${{ inputs.susfs_enable }}
+        lz4_enable: ${{ inputs.lz4_enable }}
+        unicode_enable: ${{ inputs.unicode_enable }}
+        adios_enable: ${{ inputs.adios_enable }}
+        baseband_guard: ${{ inputs.baseband_guard }}
+        kernel_suffix: ${{ inputs.kernel_suffix }}
+        build_date: ${{ inputs.build_date }}
+        artifact_token: ${{ secrets.BUILD_DIAGNOSTICS_TOKEN }}
+        signing_key: ${{ secrets.NM_BINDING_PRIVATE_KEY }}
+    - name: Save private encrypted build diagnostics
+      if: ${{ always() && steps.pipeline.outcome != 'skipped' }}
+      shell: bash
+      run: python3 "$GITHUB_WORKSPACE/ci/run_pipeline_step.py" --publish-diagnostics
+      env:
+        DIAGNOSTICS_REPOSITORY: ${{ secrets.SOURCE_REPOSITORY }}
+        BUILD_DIAGNOSTICS_TOKEN: ${{ secrets.BUILD_DIAGNOSTICS_TOKEN }}
+        DIAGNOSTICS_JOB_INDEX: ${{ strategy.job-index || 0 }}
+    - name: Clear dependency access
+      if: ${{ always() }}
+      uses: ./.github/actions/dependency-access
+      with:
+        cleanup: 'true'
